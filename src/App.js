@@ -1,154 +1,156 @@
-// import React from "react";
-// import "bootstrap/dist/css/bootstrap.min.css";
-// import "./App.css";
-
-// function App() {
-//   return (
-//     <div className="container-fluid text-white my-auto">
-//       <div className="container mx-auto my-4 py-4">
-//         <div className="row justify-content-center text-center">
-//           <h1 className="col-12 display-4 my-2 py-3 text-success">
-//             Awesome Weather
-//           </h1>
-//           <h2 className="col-12">Location Name</h2>
-//           <h3 className="col-12 text-danger">Temperature</h3>
-//           <h3 className="col-12">Weather Description</h3>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default App;
-
-import React, { Component } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Form, InputGroup, Button } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Button } from "react-bootstrap";
 import "./App.css";
-const apiKey = process.env.REACT_APP_APIKEY;
 
-export default class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      weatherResult: null,
-    };
-  }
+import WeatherCard from "./components/WeatherCard";
+import CityButtons from "./components/CityButtons";
+import ForecastCard from "./components/ForecastCard";
+import LoadingSpinner from "./components/LoadingSpinner";
+import ErrorMessage from "./components/ErrorMessage";
 
-  getCurrentWeather = async (lon, lat) => {
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-    let data = await fetch(url);
-    let result = await data.json();
-    // console.log("gimme result", result);
-    this.setState({ weatherResult: result });
-  };
+import {
+  fetchWeatherByCoords,
+  fetchWeatherByCity,
+  fetchForecastByCity,
+  fetchForecastByCoords,
+  cacheWeather,
+  getCachedWeather,
+  getWeatherBackground,
+} from "./services/weatherApi";
 
-  getLocation = () => {
-    navigator.geolocation.getCurrentPosition((post) => {
-      this.getCurrentWeather(post.coords.longitude, post.coords.latitude);
-    });
-  };
+export default function App() {
+  const [weather, setWeather] = useState(null);
+  const [forecast, setForecast] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCity, setActiveCity] = useState(null);
+  const [bgClass, setBgClass] = useState("bg-default");
 
-  getWeatherIn = async (city) => {
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
-    let data = await fetch(url);
-    let result = await data.json();
-    console.log("my new result", result);
-    this.setState({ weatherResult: result });
-  };
-
-  componentDidMount() {
-    this.getLocation();
-  }
-
-  render() {
-    if (this.state.weatherResult == null) {
-      return <div>Loading...</div>;
+  const loadWeatherByCoords = useCallback(async (lon, lat) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [weatherData, forecastData] = await Promise.all([
+        fetchWeatherByCoords(lon, lat),
+        fetchForecastByCoords(lon, lat),
+      ]);
+      setWeather(weatherData);
+      setForecast(forecastData);
+      setActiveCity(null);
+      setBgClass(getWeatherBackground(weatherData));
+      cacheWeather({ weather: weatherData, forecast: forecastData });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    return (
-      <div className="container text-white my-auto">
-        <div className="container mx-auto my-4 py-4 ">
-          <h1 className="col-12 display-4 my-2 py-3 text-success text-center">
-            An's wholesome Weather
-          </h1>
-          <div className="row justify-content-center text-center bigBox mb-5 mt-5 pt-5 pb-5">
-            <h2 className="col-12 text-dark">
-              {this.state.weatherResult.name}
-            </h2>
-            <h3 className="col-12 text-danger">
-              {this.state.weatherResult.main.temp}°C /{" "}
-              {Math.round((9 * this.state.weatherResult.main.temp + 32 * 5) / 5)}°F
-              <br></br>
-              <h4 className="text-info">
-                {" "}
-                Feels like {this.state.weatherResult.main.feels_like} °C
-              </h4>
-            </h3>
-            <h3 className="col-12 text-capitalize text-warning">
-              {this.state.weatherResult.weather[0].description}
-            </h3>
-            <div className="container-fluid d-flex fixed-top justify-content-around">
-              <Button
-                onClick={() => this.getWeatherIn("moscow")}
-                variant="success"
-              >
-                Moscow
-              </Button>{" "}
-              <Button
-                onClick={() => this.getWeatherIn("London")}
-                variant="success"
-              >
-                London
-              </Button>
-              <Button onClick={() => this.getWeatherIn("Paris")} variant="success">
-                Paris
-              </Button>{" "}
-              <Button
-                onClick={() => this.getWeatherIn("Ha noi")}
-                variant="success"
-              >
-                Hanoi
-              </Button>
-              <Button
-                onClick={() => this.getWeatherIn("sydney")}
-                variant="success"
-              >
-                Sydney
-              </Button>{" "}
-              <Button
-                onClick={() => this.getWeatherIn("beijing")}
-                variant="success"
-              >
-                Beijing
-              </Button>
-              <Button onClick={() => this.getWeatherIn("miami")} variant="success">
-                Miami
-              </Button>{" "}
-              <Button onClick={() => this.getWeatherIn("tokyo")} variant="success">
-                Tokyo
-              </Button>{" "}
-              <Button
-                onClick={() => this.getWeatherIn("new york")}
-                variant="success"
-              >
-                New York
-              </Button>
-              <Button
-                onClick={() => this.getWeatherIn("vancouver")}
-                variant="success"
-              >
-                Vancouver
-              </Button>{" "}
-              <Button
-                onClick={() => this.getWeatherIn("san francisco")}
-                variant="success"
-              >
-                San Francisco
-              </Button>{" "}
-            </div>
-          </div>
-        </div>
-      </div>
+  }, []);
+
+  const loadWeatherByCity = useCallback(async (city) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [weatherData, forecastData] = await Promise.all([
+        fetchWeatherByCity(city),
+        fetchForecastByCity(city),
+      ]);
+      setWeather(weatherData);
+      setForecast(forecastData);
+      setActiveCity(city);
+      setBgClass(getWeatherBackground(weatherData));
+      cacheWeather({ weather: weatherData, forecast: forecastData });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Dynamic background
+  useEffect(() => {
+    document.body.className = bgClass;
+  }, [bgClass]);
+
+  useEffect(() => {
+    // Try cache first for instant display
+    const cached = getCachedWeather();
+    if (cached) {
+      setWeather(cached.weather);
+      setForecast(cached.forecast);
+      setLoading(false);
+    }
+
+    // Then fetch fresh data via geolocation
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser.");
+      setLoading(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => loadWeatherByCoords(pos.coords.longitude, pos.coords.latitude),
+      () => {
+        if (!cached) {
+          setError("Unable to retrieve your location. Search for a city instead.");
+          setLoading(false);
+        }
+      }
     );
-  }
+  }, [loadWeatherByCoords]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (trimmed) {
+      loadWeatherByCity(trimmed);
+      setSearchQuery("");
+    }
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => loadWeatherByCoords(pos.coords.longitude, pos.coords.latitude),
+        () => setError("Unable to retrieve your location.")
+      );
+    }
+  };
+
+  return (
+    <div className="app-wrapper">
+      <h1 className="app-title text-center">
+        An's wholesome Weather
+      </h1>
+
+      <CityButtons onCitySelect={loadWeatherByCity} activeCity={activeCity} />
+
+      <div className="search-container">
+        <Form onSubmit={handleSearch}>
+          <InputGroup>
+            <Form.Control
+              type="text"
+              placeholder="Search any city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <InputGroup.Append>
+              <Button type="submit" variant="success">
+                Search
+              </Button>
+            </InputGroup.Append>
+          </InputGroup>
+        </Form>
+      </div>
+
+      <div className="content-container">
+        {loading && !weather && <LoadingSpinner />}
+        {error && <ErrorMessage message={error} onRetry={handleRetry} />}
+        {weather && <WeatherCard weather={weather} />}
+        {forecast && <ForecastCard forecast={forecast} />}
+      </div>
+    </div>
+  );
 }

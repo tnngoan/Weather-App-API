@@ -2,8 +2,8 @@
 * [X] User is prompted when the app loads to give permission to use their location
 * [X] User can see their current location's name
 * [x] User can see their current location's fahrenheit & celsius temperature
-* [X] User can see description of their current locatiosn weather
-* [x] User can see an icon which illustrates the currentlocations weather
+* [X] User can see description of their current location's weather
+* [x] User can see an icon which illustrates the current location's weather
 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
